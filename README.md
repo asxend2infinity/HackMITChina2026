@@ -79,8 +79,6 @@ Note: Exact wiring and pin configuration depend on the display module used.
 Getting Started
 1. Order PCB & components according to BOM, 3D print housing
 2. Clone the Repository
-git clone https://github.com/your-username/aerohud.git
-cd aerohud
 3. Open in PlatformIO
 
 Open the project folder in VSCode
