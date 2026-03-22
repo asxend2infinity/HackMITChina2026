@@ -8,27 +8,26 @@
 // =======================================================
 static const uint8_t OLED_ADDR_7BIT = 0x3C;   // try 0x3D if needed
 
-// Screen 1 (SPD/DIST/GEAR) stays as-is
-U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2_screen1(U8G2_R2, U8X8_PIN_NONE);
+// Screen 1 (SPD/DIST/GEAR)
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2_screen1(U8G2_R0, U8X8_PIN_NONE);
 
-// Screen 2 (HR/CAD/PWR) fixed orientation
+// Screen 2 (HR/CAD/PWR)  <-- changed from U8G2_R0 to U8G2_R2
 U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2_screen2(
-    U8G2_R0,
+    U8G2_R2,
     /* clock=*/7,
     /* data=*/6,
     /* reset=*/U8X8_PIN_NONE);
 
 // =======================================================
-// NEW: framebuffer horizontal mirror helpers (software flip)
+// framebuffer horizontal mirror helpers
 // =======================================================
 static inline void mirrorHorizU8g2(U8G2 &u) {
     uint8_t *buf = u.getBufferPtr();
-    const int w = u.getDisplayWidth();          // 128
-    const int h = u.getDisplayHeight();         // 32
-    const int pages = h / 8;                    // 4
+    const int w = u.getDisplayWidth();   // 128
+    const int h = u.getDisplayHeight();  // 32
+    const int pages = h / 8;             // 4
 
     for (int p = 0; p < pages; ++p) {
-
         int row = p * w;
         for (int x = 0; x < w / 2; ++x) {
             uint8_t tmp = buf[row + x];
@@ -39,19 +38,17 @@ static inline void mirrorHorizU8g2(U8G2 &u) {
 }
 
 static inline void sendBufferMirrored(U8G2 &u) {
-    // mirror for output
     mirrorHorizU8g2(u);
     u.sendBuffer();
-    // mirror back so all your drawing coords/logic remain unchanged next frame
     mirrorHorizU8g2(u);
 }
 
 // =======================================================
 // Values
 // =======================================================
-String spdVal  = "0.0";   // numeric only
-String distVal = "0.00";  // numeric only
-String gearVal = "N/A";   // "1/7"
+String spdVal  = "0.0";
+String distVal = "0.00";
+String gearVal = "N/A";
 
 String hrVal   = "N/A";
 String cadVal  = "N/A";
@@ -383,6 +380,8 @@ static const uint8_t X3 = 88;
 
 static const uint8_t Y_HDR = 18;
 static const uint8_t Y_VAL = 31;
+static const uint8_t Y2_HDR = 13;
+static const uint8_t Y2_VAL = 26;
 
 static String fmtSPD()  { return spdConnected() ? (spdVal + "kph") : String("N/A"); }
 static String fmtDIST() { return distVal; }
@@ -392,7 +391,6 @@ static String fmtHR()   { return hrConnected()  ? hrVal  : String("N/A"); }
 static String fmtCAD()  { return cadConnected() ? cadVal : String("N/A"); }
 static String fmtPWR()  { return pwrConnected() ? pwrVal : String("N/A"); }
 
-// Screen 1 unchanged (left aligned) — ONLY sendBuffer becomes mirrored send
 static void drawScreen1() {
     u8g2_screen1.clearBuffer();
     u8g2_screen1.setFont(u8g2_font_5x8_tf);
@@ -405,16 +403,13 @@ static void drawScreen1() {
     u8g2_screen1.drawStr(X2, Y_VAL, fmtDIST().c_str());
     u8g2_screen1.drawStr(X3, Y_VAL, fmtGEAR().c_str());
 
-    sendBufferMirrored(u8g2_screen1);  // ✅ only change
+    sendBufferMirrored(u8g2_screen1);
 }
 
-// Screen 2: RIGHT-aligned content — ONLY sendBuffer becomes mirrored send
 static void drawScreen2() {
     u8g2_screen2.clearBuffer();
     u8g2_screen2.setFont(u8g2_font_5x8_tf);
 
-    // --- headers (right aligned inside each column region) ---
-    // Column regions: [X1..X2), [X2..X3), [X3..128)
     const int C1R = X2 - 1;
     const int C2R = X3 - 1;
     const int C3R = 127;
@@ -426,20 +421,19 @@ static void drawScreen2() {
         u8g2_screen2.drawStr(x, y, s);
     };
 
-    drawRightInColumn(C1R, Y_HDR, "HR");
-    drawRightInColumn(C2R, Y_HDR, "CAD");
-    drawRightInColumn(C3R, Y_HDR, "PWR");
+    drawRightInColumn(C1R, Y2_HDR, "HR");
+    drawRightInColumn(C2R, Y2_HDR, "CAD");
+    drawRightInColumn(C3R, Y2_HDR, "PWR");
 
-    // --- values (right aligned inside each column region) ---
     String hr  = fmtHR();
     String cad = fmtCAD();
     String pwr = fmtPWR();
 
-    drawRightInColumn(C1R, Y_VAL, hr.c_str());
-    drawRightInColumn(C2R, Y_VAL, cad.c_str());
-    drawRightInColumn(C3R, Y_VAL, pwr.c_str());
+    drawRightInColumn(C1R, Y2_VAL, hr.c_str());
+    drawRightInColumn(C2R, Y2_VAL, cad.c_str());
+    drawRightInColumn(C3R, Y2_VAL, pwr.c_str());
 
-    sendBufferMirrored(u8g2_screen2);  // ✅ only change
+    sendBufferMirrored(u8g2_screen2);
 }
 
 // =======================================================
@@ -532,50 +526,3 @@ void loop() {
 
     delay(50);
 }
-
-// #include <Arduino.h>
-// #include <Wire.h>
-// #include <U8g2lib.h>
-
-// // OLED on HW I2C, address 0x3C
-// U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(
-//   U8G2_R0,
-//   U8X8_PIN_NONE
-// );
-
-// void setup() {
-//   Serial.begin(115200);
-//   delay(200);
-
-//   // HW I2C on GPIO 8 (SDA), GPIO 9 (SCL)
-//   Wire.begin(6, 7);
-//   Wire.setClock(100000);
-
-//   if (!u8g2.begin()) {
-//     Serial.println("OLED init failed");
-//     while (1);
-//   }
-
-//   u8g2.setI2CAddress(0x3C << 1);
-//   u8g2.setFont(u8g2_font_6x10_tf);
-
-//   randomSeed(esp_random());
-// }
-
-// void loop() {
-//   u8g2.clearBuffer();
-
-//   int r1 = random(0, 1000);
-//   int r2 = random(0, 1000);
-
-//   u8g2.drawStr(0, 12, "DEBUG OLED");
-//   u8g2.setCursor(0, 28);
-//   u8g2.print("R1=");
-//   u8g2.print(r1);
-//   u8g2.print(" R2=");
-//   u8g2.print(r2);
-
-//   u8g2.sendBuffer();
-
-//   delay(1000);
-// }
