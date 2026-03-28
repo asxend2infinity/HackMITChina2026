@@ -1,6 +1,6 @@
 # HackMITChina2026  
 **AeroVis – Helmet Integrated Heads-Up Display for Time Trial Cycling**
-**Rigonomics – Real-time Riding Posture Adjustment Alerts**
+**Rigonomics – Real-time Riding Posture Adjustment Algorithm**
 
 ---
 
