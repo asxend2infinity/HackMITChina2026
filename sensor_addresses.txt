@@ -1,0 +1,11 @@
+# Unified sensor address config
+
+WIT1=e2:37:79:88:67:1b
+WIT2=ca:35:28:ae:08:47
+WIT3=eb:97:74:e7:34:6a
+WIT4=e7:26:da:1d:32:50
+HR=ef:16:4d:10:77:b5
+CAD=
+SPD=
+PWR=
+DI2=
