@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AeroVis Sensor Pairing Utility</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #101114;
+      --panel: #171922;
+      --panel-2: #0f1118;
+      --border: #2a2e3a;
+      --border-2: #34394a;
+      --text: #f1f1f1;
+      --muted: #aab1bd;
+      --blue: #2b6cff;
+      --blue-hover: #245ee0;
+      --danger: #7a2932;
+      --danger-hover: #8e313b;
+      --secondary: #222735;
+      --secondary-hover: #2a3042;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app {
+      width: min(1500px, 96vw);
+      margin: 0 auto;
+      padding: 14px 18px 16px;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+    }
+
+    .header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 54px;
+    }
+
+    .header-left h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.05;
+      letter-spacing: 0.3px;
+    }
+
+    .header-left .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .header-right {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 380px minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .left-col,
+    .right-col {
+      min-height: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .left-col {
+      grid-template-rows: minmax(140px, 0.95fr) minmax(250px, 1.05fr) minmax(170px, 0.9fr);
+    }
+
+    .right-col {
+      grid-template-rows: 1fr;
+    }
+
+    .card {
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      flex: 0 0 auto;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .intro,
+    .saved-box,
+    .device-list {
+      min-height: 0;
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .intro {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
+    .row {
+      margin-bottom: 10px;
+      flex: 0 0 auto;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    select, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border-2);
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    select {
+      background: var(--panel-2);
+      color: var(--text);
+    }
+
+    button {
+      background: var(--blue);
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+      margin-bottom: 8px;
+      transition: background 0.15s ease;
+    }
+
+    button:hover {
+      background: var(--blue-hover);
+    }
+
+    button.secondary {
+      background: var(--secondary);
+    }
+
+    button.secondary:hover {
+      background: var(--secondary-hover);
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button.danger:hover {
+      background: var(--danger-hover);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 4px;
+      min-height: 20px;
+      color: #9fd0ff;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .saved-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      white-space: pre-wrap;
+      font-family: Consolas, Monaco, monospace;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .device-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex: 0 0 auto;
+    }
+
+    .device-toolbar .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .device-list {
+      display: grid;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .device {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.15s ease;
+    }
+
+    .device-name {
+      font-weight: 700;
+      margin-bottom: 4px;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .device-address {
+      color: var(--muted);
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      line-height: 1.35;
+    }
+
+    .small-btn {
+      width: 96px;
+      min-width: 96px;
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .main {
+        grid-template-columns: 340px minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 960px) {
+      html, body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .left-col,
+      .right-col {
+        grid-template-rows: auto;
+      }
+
+      .intro,
+      .saved-box,
+      .device-list {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="header-left">
+        <h1>AEROVIS SENSOR PAIRING UTILITY</h1>
+        <div class="sub">Local browser GUI for your Python BLE pairing script</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="left-col">
+        <div class="card">
+          <div class="title">Intro</div>
+          <div id="introBox" class="intro">Loading intro...</div>
+        </div>
+
+        <div class="card">
+          <div class="title">Sensor Selection</div>
+
+          <div class="row">
+            <label for="sensorSelect">Choose sensor slot</label>
+            <select id="sensorSelect"></select>
+          </div>
+
+          <button id="scanBtn">Scan Named BLE Devices</button>
+          <button id="saveBtn" class="secondary" disabled>Save Selected Device</button>
+          <button id="clearBtn" class="danger">Clear Current Sensor Slot</button>
+          <button id="writeBtn" class="secondary">Write sensor_addresses.txt</button>
+
+          <div id="status" class="status">Idle.</div>
+        </div>
+
+        <div class="card">
+          <div class="title">Saved Addresses</div>
+          <div id="savedBox" class="saved-box"></div>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="card">
+          <div class="device-toolbar">
+            <div class="title" style="margin-bottom: 0;">Detected Devices</div>
+            <div class="hint">Named BLE devices only</div>
+          </div>
+          <div id="deviceList" class="device-list">
+            <div class="muted">Press “Scan Named BLE Devices”.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const introBox = document.getElementById("introBox");
+    const sensorSelect = document.getElementById("sensorSelect");
+    const scanBtn = document.getElementById("scanBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const writeBtn = document.getElementById("writeBtn");
+    const statusEl = document.getElementById("status");
+    const deviceListEl = document.getElementById("deviceList");
+    const savedBoxEl = document.getElementById("savedBox");
+
+    let scannedDevices = [];
+    let selectedDevice = null;
+    let savedAddresses = {};
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function renderSaved() {
+      const keys = ["WIT1", "WIT2", "WIT3", "WIT4", "HR", "CAD", "SPD", "PWR", "DI2"];
+      savedBoxEl.textContent = keys
+        .map(k => `${k}=${savedAddresses[k] || "(not assigned)"}`)
+        .join("\n");
+    }
+
+    function renderDevices() {
+      deviceListEl.innerHTML = "";
+
+      if (!scannedDevices.length) {
+        deviceListEl.innerHTML = `<div class="muted">No named BLE devices found.</div>`;
+        return;
+      }
+
+      scannedDevices.forEach((device, index) => {
+        const row = document.createElement("div");
+        row.className = "device";
+
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="device-name">[${String(index).padStart(2, "0")}] ${escapeHtml(device.name)}</div>
+          <div class="device-address">${escapeHtml(device.address)}</div>
+        `;
+
+        const btn = document.createElement("button");
+        btn.className = "small-btn";
+        btn.textContent = "Select";
+        btn.addEventListener("click", () => {
+          selectedDevice = device;
+          saveBtn.disabled = false;
+          setStatus(`Selected ${device.name} | ${device.address}`);
+          highlightSelected(device.address);
+        });
+
+        row.appendChild(left);
+        row.appendChild(btn);
+        deviceListEl.appendChild(row);
+      });
+    }
+
+    function highlightSelected(address) {
+      const cards = document.querySelectorAll(".device");
+      cards.forEach(card => {
+        const addrEl = card.querySelector(".device-address");
+        if (addrEl && addrEl.textContent === address) {
+          card.style.borderColor = "#2b6cff";
+        } else {
+          card.style.borderColor = "#2a2e3a";
+        }
+      });
+    }
+
+    function populateSensors(sensorData) {
+      sensorSelect.innerHTML = "";
+
+      const makeGroup = (labelText, items) => {
+        const group = document.createElement("optgroup");
+        group.label = labelText;
+        items.forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.key;
+          opt.textContent = `${item.key} - ${item.label}`;
+          group.appendChild(opt);
+        });
+        sensorSelect.appendChild(group);
+      };
+
+      makeGroup("WIT Sensors", sensorData.wit_sensors);
+      makeGroup("Other Sensors", sensorData.other_sensors);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function loadIntro() {
+      const res = await fetch("/api/intro");
+      const data = await res.json();
+      introBox.textContent =
+        "AEROVIS SENSOR PAIRING UTILITY\n===================================\n\n" +
+        data.lines.join("\n");
+    }
+
+    async function loadSensors() {
+      const res = await fetch("/api/sensors");
+      const data = await res.json();
+      populateSensors(data);
+      savedAddresses = data.saved_addresses || {};
+      renderSaved();
+    }
+
+    scanBtn.addEventListener("click", async () => {
+      setStatus("Scanning...");
+      saveBtn.disabled = true;
+      selectedDevice = null;
+      deviceListEl.innerHTML = `<div class="muted">Scanning...</div>`;
+
+      try {
+        const res = await fetch("/api/scan");
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || "Scan failed");
+        }
+
+        scannedDevices = data.devices || [];
+        renderDevices();
+        setStatus(`Scan complete. Found ${scannedDevices.length} named device(s).`);
+      } catch (err) {
+        scannedDevices = [];
+        renderDevices();
+        setStatus(`Error: ${err.message}`);
+      }
+    });
+
+    saveBtn.addEventListener("click", async () => {
+      if (!selectedDevice) {
+        setStatus("No device selected.");
+        return;
+      }
+
+      const sensorKey = sensorSelect.value;
+
+      try {
+        const res = await fetch("/api/save-selection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sensor_key: sensorKey,
+            address: selectedDevice.address
+          })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || "Save failed");
+        }
+
+        savedAddresses = data.saved_addresses || {};
+        renderSaved();
+        setStatus(`Saved ${sensorKey} = ${selectedDevice.address}`);
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    });
+
+    clearBtn.addEventListener("click", async () => {
+      const sensorKey = sensorSelect.value;
+
+      try {
+        const res = await fetch("/api/clear-selection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sensor_key: sensorKey })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || "Clear failed");
+        }
+
+        savedAddresses = data.saved_addresses || {};
+        renderSaved();
+        setStatus(`Cleared ${sensorKey}`);
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    });
+
+    writeBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/write-config", { method: "POST" });
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || "Write failed");
+        }
+
+        savedAddresses = data.saved_addresses || {};
+        renderSaved();
+        setStatus(`Wrote config to ${data.path}`);
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    });
+
+    async function init() {
+      await loadIntro();
+      await loadSensors();
+      setStatus("Ready.");
+    }
+
+    init();
+  </script>
+</body>
+</html>
