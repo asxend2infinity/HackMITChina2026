@@ -97,6 +97,8 @@ Open the project folder in VSCode
 
 Ensure PlatformIO extension is installed  
 
+For pairing: Run scan_util.py and open local webpage using a browser
+
 4. Build & Upload  
 
 Connect ESP32 via USB  
